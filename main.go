@@ -23,29 +23,55 @@ var store = sessions.NewCookieStore([]byte("6668fe14-f8cd-4be6-b896-3e04c1065da5
 
 var users = []User{}
 
-func (h *serve) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("content-type", "application/json")
-	fmt.Printf("Request URL: %s\n", r.URL.Path)
+func Get(w http.ResponseWriter, r *http.Request) {
 	switch {
-	case r.Method == "GET" && r.URL.Path == "/test":
+	case r.URL.Path == "/test":
 		fmt.Printf("here?")
 		w.Write([]byte(`{"message": "GET /test called"}`))
 		return
-	case r.Method == "POST" && r.URL.Path == "/register":
-		register(w, r)
-		return
-	case r.Method == "POST" && r.URL.Path == "/login":
-		login(w, r)
-		return
-	case r.Method == "POST" && r.URL.Path == "/logout":
-		logout(w, r)
-	case r.Method == "GET" && r.URL.Path == "/users":
+	case r.URL.Path == "/users":
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(users)
 		return
 	default:
-		http.Error(w, "Not found", http.StatusNotFound)
+		http.Error(w, "Path Not found", http.StatusNotFound)
+	}
+}
+
+func Post(w http.ResponseWriter, r *http.Request) {
+	switch {
+	case r.URL.Path == "/register":
+		register(w, r)
+		return
+	case r.URL.Path == "/login":
+		login(w, r)
+		return
+	case r.URL.Path == "/logout":
+		logout(w, r)
+	default:
+		http.Error(w, "Path Not found", http.StatusNotFound)
+	}
+}
+
+func Put(w http.ResponseWriter, r *http.Request) {
+	panic("Not Implemented")
+}
+
+func Delete(w http.ResponseWriter, r *http.Request) {
+	panic("Not Implemented")
+}
+
+func (h *serve) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+	fmt.Printf("Request URL: %s\n", r.URL.Path)
+	switch {
+	case r.Method == "GET":
+		Get(w, r)
+	case r.Method == "POST":
+		Post(w, r)
+	default:
+		http.Error(w, "Method not supported", http.StatusNotFound)
 	}
 }
 
@@ -169,6 +195,7 @@ func main() {
 	setupDBSchema()
 
 	mux := http.NewServeMux()
+	fmt.Println("Server is ready and listening on port 3000")
 	mux.Handle("/", &serve{})
 	http.ListenAndServe(":3000", mux)
 }
