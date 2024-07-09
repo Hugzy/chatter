@@ -22,10 +22,29 @@ func connect_db(c string) {
 	db = conn
 }
 
+func GetMigrations() (string, string, error) {
+    query := `SELECT * FROM PGMIGRATIONS TOP(1)`
+	var id string
+	var name string
+    err := db.QueryRow(context.Background(), query).Scan(&id, &name)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
+		os.Exit(1)
+	}
+
+    return id, name, err
+}
+
+
 func checkError(err error) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+type DbMigrationRow struct {
+    ID      string
+    Name    string
 }
 
 type migration func() string
