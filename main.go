@@ -27,16 +27,10 @@ var users = []User{}
 func Get(w http.ResponseWriter, r *http.Request) {
 	switch {
 	case r.URL.Path == "/test":
-		fmt.Printf("here?")
 		w.Write([]byte(`{"message": "GET /test called"}`))
 		return
     case r.URL.Path == "/get/migrations":
-        id, name, err := GetMigrations();
-        if err != nil {
-            http.Error(w, err.Error(), http.StatusInternalServerError)
-            return
-        }
-        fmt.Printf("id: %v - name: %v\n", id, name)
+        GetMigrations();
 	case r.URL.Path == "/users":
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)

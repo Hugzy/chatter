@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+    "log"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -22,17 +23,30 @@ func connect_db(c string) {
 	db = conn
 }
 
-func GetMigrations() (string, string, error) {
-    query := `SELECT * FROM PGMIGRATIONS TOP(1)`
-	var id string
-	var name string
-    err := db.QueryRow(context.Background(), query).Scan(&id, &name)
+func GetMigrations() {
+    query := "SELECT * FROM PGMIGRATIONS"
+    rows, err := db.Query(context.Background(), query)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
 		os.Exit(1)
 	}
 
-    return id, name, err
+    rowNum := 1
+	for rows.Next() {
+		var v []interface{}
+		v, err = rows.Values()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Println("Row", rowNum)
+
+		for i := range v {
+			fmt.Println(rows.FieldDescriptions()[i].Name, v[i])
+		}
+		rowNum++
+	}
+
 }
 
 
