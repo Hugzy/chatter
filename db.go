@@ -49,7 +49,6 @@ func GetMigrations() {
 
 }
 
-
 func checkError(err error) {
 	if err != nil {
 		panic(err)
@@ -62,6 +61,24 @@ type DbMigrationRow struct {
 }
 
 type migration func() string
+
+func HasMigrationRun(name string) bool {
+    fmt.Printf("checking if migratoin %s has run: ", name);
+    query := fmt.Sprintf("SELECT * FROM PGMIGRATIONS WHERE NAME = '%s'", name);
+    rows, err := db.Query(context.Background(), query);
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
+		os.Exit(1)
+	}
+    
+    hasRun := rows.Next();
+
+    rows.Close();
+
+    fmt.Printf("%t \n", hasRun)
+
+    return hasRun;
+}
 
 func runMigration(name string, fn migration) {
 	tx, err := db.Begin(context.Background())
@@ -98,9 +115,13 @@ func setupDBSchema() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Migration schema created")
-
-	runMigration("create_user_table", createUserTable)
+	fmt.Println("Migration schema created");
+    
+    var hasRun = false;
+    hasRun = HasMigrationRun("create_user_table")
+    if !hasRun {
+        runMigration("create_user_table", createUserTable)
+    }
 }
 
 func createUserTable() string {
