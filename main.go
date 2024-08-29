@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+
 	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
@@ -13,25 +14,23 @@ import (
 type serve struct{}
 
 type User struct {
-	ID       uuid.UUID `json:"id"`
 	Username string    `json:"username"`
 	Password string    `json:"password"`
+	ID       uuid.UUID `json:"id"`
 }
 
 var store = sessions.NewCookieStore([]byte("6668fe14-f8cd-4be6-b896-3e04c1065da5"))
 
 var users = []User{}
 
-
-
 func Get(w http.ResponseWriter, r *http.Request) {
-	switch {
-	case r.URL.Path == "/test":
+	switch r.URL.Path {
+	case "/test":
 		w.Write([]byte(`{"message": "GET /test called"}`))
 		return
-    case r.URL.Path == "/get/migrations":
-        GetMigrations();
-	case r.URL.Path == "/users":
+	case "/get/migrations":
+		GetMigrations()
+	case "/users":
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(users)
@@ -42,14 +41,14 @@ func Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func Post(w http.ResponseWriter, r *http.Request) {
-	switch {
-	case r.URL.Path == "/register":
+	switch r.URL.Path {
+	case "/register":
 		register(w, r)
 		return
-	case r.URL.Path == "/login":
+	case "/login":
 		login(w, r)
 		return
-	case r.URL.Path == "/logout":
+	case "/logout":
 		logout(w, r)
 	default:
 		http.Error(w, "Path Not found", http.StatusNotFound)
@@ -64,13 +63,21 @@ func Delete(w http.ResponseWriter, r *http.Request) {
 	panic("Not Implemented")
 }
 
+func checkUser(w http.ResponseWriter, r *http.Request) bool {
+	session, _ := store.Get(r, "login")
+	if session.Values["id"] == u.ID.String() {
+		http.Error(w, "Already logged in", http.StatusOK)
+		return true
+	}
+}
+
 func (h *serve) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	fmt.Printf("Request URL: %s\n", r.URL.Path)
-	switch {
-	case r.Method == "GET":
+	switch r.Method {
+	case "GET":
 		Get(w, r)
-	case r.Method == "POST":
+	case "POST":
 		Post(w, r)
 	default:
 		http.Error(w, "Method not supported", http.StatusNotFound)
@@ -114,7 +121,6 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 	var p User
 	err := json.NewDecoder(r.Body).Decode(&p)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

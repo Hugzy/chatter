@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
-    "log"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -24,14 +24,14 @@ func connect_db(c string) {
 }
 
 func GetMigrations() {
-    query := "SELECT * FROM PGMIGRATIONS"
-    rows, err := db.Query(context.Background(), query)
+	query := "SELECT * FROM PGMIGRATIONS"
+	rows, err := db.Query(context.Background(), query)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
 		os.Exit(1)
 	}
 
-    rowNum := 1
+	rowNum := 1
 	for rows.Next() {
 		var v []interface{}
 		v, err = rows.Values()
@@ -46,7 +46,6 @@ func GetMigrations() {
 		}
 		rowNum++
 	}
-
 }
 
 func checkError(err error) {
@@ -56,28 +55,28 @@ func checkError(err error) {
 }
 
 type DbMigrationRow struct {
-    ID      string
-    Name    string
+	ID   string
+	Name string
 }
 
 type migration func() string
 
 func HasMigrationRun(name string) bool {
-    fmt.Printf("checking if migratoin %s has run: ", name);
-    query := fmt.Sprintf("SELECT * FROM PGMIGRATIONS WHERE NAME = '%s'", name);
-    rows, err := db.Query(context.Background(), query);
+	fmt.Printf("checking if migratoin %s has run: ", name)
+	query := fmt.Sprintf("SELECT * FROM PGMIGRATIONS WHERE NAME = '%s'", name)
+	rows, err := db.Query(context.Background(), query)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
 		os.Exit(1)
 	}
-    
-    hasRun := rows.Next();
 
-    rows.Close();
+	hasRun := rows.Next()
 
-    fmt.Printf("%t \n", hasRun)
+	rows.Close()
 
-    return hasRun;
+	fmt.Printf("%t \n", hasRun)
+
+	return hasRun
 }
 
 func runMigration(name string, fn migration) {
@@ -90,13 +89,11 @@ func runMigration(name string, fn migration) {
 	defer tx.Rollback(context.Background())
 
 	_, err = tx.Exec(context.Background(), fn())
-
 	if err != nil {
 		panic(err)
 	}
 
 	_, err = tx.Exec(context.Background(), "INSERT INTO PGMIGRATIONS (id, name, created_at) VALUES ($1, $2, $3)", uuid.New().String(), name, "now()")
-
 	if err != nil {
 		panic(err)
 	}
@@ -115,13 +112,13 @@ func setupDBSchema() {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Migration schema created");
-    
-    var hasRun = false;
-    hasRun = HasMigrationRun("create_user_table")
-    if !hasRun {
-        runMigration("create_user_table", createUserTable)
-    }
+	fmt.Println("Migration schema created")
+
+	hasRun := false
+	hasRun = HasMigrationRun("create_user_table")
+	if !hasRun {
+		runMigration("create_user_table", createUserTable)
+	}
 }
 
 func createUserTable() string {
