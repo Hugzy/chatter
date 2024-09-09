@@ -38,13 +38,7 @@ func isLoggedIn(w http.ResponseWriter, r *http.Request) bool {
 
 	sess, _ := store.Get(r, "login")
 
-	// user was not logged in i guess?
-	// is this even good enough?
-	if sess == nil {
-		return false
-	}
-
-	return true
+	return sess == nil
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
@@ -85,8 +79,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		// TODO could add and store an accesskey here with an expiration
 		session.Values["id"] = user.ID.String()
 		session.Values["username"] = user.Username
-		session.Save(r, w)
-		w.Write([]byte("Login successful"))
+		session.Values["accesskey"] = w.Write([]byte("Login successful"))
 	} else {
 		http.Error(w, "Invalid password", http.StatusBadRequest)
 	}

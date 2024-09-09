@@ -125,3 +125,8 @@ func createUserTable() string {
 	fmt.Println("Running CreateUserTable migration")
 	return "CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY, username TEXT, password TEXT)"
 }
+
+func createAccesskeyTable() string {
+	fmt.Println("Running createAccesskeyTable migration")
+	return "CREATE TABLE IF NOT EXISTS access_key (id UUID PRIMARY KEY, accesskey UUID, created_at TIMESTAMP, keep_alive TEXT, user_id UUID references users (id)"
+}
