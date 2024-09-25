@@ -41,6 +41,26 @@ func isLoggedIn(w http.ResponseWriter, r *http.Request) bool {
 	return sess == nil
 }
 
+func register(w http.ResponseWriter, r *http.Request) {
+	// Get the user from the signup request
+	var p User
+	err := json.NewDecoder(r.Body).Decode(&p)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func logout(w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "login")
+
+	for k := range session.Values {
+		delete(session.Values, k)
+	}
+
+	w.Write([]byte("Logout successful"))
+}
+
 func login(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -79,51 +99,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		// TODO could add and store an accesskey here with an expiration
 		session.Values["id"] = user.ID.String()
 		session.Values["username"] = user.Username
-		session.Values["accesskey"] = w.Write([]byte("Login successful"))
-	} else {
-		http.Error(w, "Invalid password", http.StatusBadRequest)
+		// session.Values["accesskey"] =
+		w.Write([]byte("Login successful"))
 	}
-}
-
-func logout(w http.ResponseWriter, r *http.Request) {
-	session, _ := store.Get(r, "login")
-	session.Options.MaxAge = -1
-	session.Save(r, w)
-	w.Write([]byte("Logged out"))
-}
-
-func register(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-	var p User
-
-	err := json.NewDecoder(r.Body).Decode(&p)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	p.ID = uuid.New()
-
-	idx := slices.IndexFunc(users, func(u User) bool { return u.Username == p.Username })
-
-	if idx == -1 {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(p.Password), bcrypt.DefaultCost)
-		if err != nil {
-			http.Error(w, "Error hashing password", http.StatusBadRequest)
-			return
-		} else {
-			p.Password = string(hashedPassword)
-			saveUser(p)
-			return
-		}
-	}
-
-	w.Write([]byte("User already exists"))
-}
-
-func testLoggedIn(w http.ResponseWriter, r *http.Request) {
-	panic("unimplemented")
 }

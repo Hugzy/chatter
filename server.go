@@ -33,7 +33,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 		return
 	case "/test/afterlogin":
 		isLoggedIn(w, r)
-		testLoggedIn(w, r)
+		// testLoggedIn(w, r)
 	default:
 		http.Error(w, "Path Not found", http.StatusNotFound)
 	}
