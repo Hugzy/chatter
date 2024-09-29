@@ -7,14 +7,14 @@ import (
 	"os"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var db *pgx.Conn
+var db *pgxpool.Pool
 
 func connect_db(c string) {
 	fmt.Println("Connecting to database with connection string: ", c)
-	conn, err := pgx.Connect(context.Background(), c)
+	conn, err := pgxpool.New(context.Background(), c)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)

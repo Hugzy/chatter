@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -41,14 +42,27 @@ func isLoggedIn(w http.ResponseWriter, r *http.Request) bool {
 	return sess == nil
 }
 
-func register(w http.ResponseWriter, r *http.Request) {
+func register(w http.ResponseWriter, r *http.Request) error {
 	// Get the user from the signup request
+	tx, err := db.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(context.Background())
+
 	var p User
-	err := json.NewDecoder(r.Body).Decode(&p)
+	err = json.NewDecoder(r.Body).Decode(&p)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return err
 	}
+
+	_, err = tx.Exec(context.Background(), "INSERT INTO User")
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {

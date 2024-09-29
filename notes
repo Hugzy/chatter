@@ -1,0 +1,4 @@
+- Add validate login to all paths registered
+- make register save user to database alongside hashed password 
+- 
+
