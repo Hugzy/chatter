@@ -14,6 +14,8 @@ import (
 
 var users = []User{}
 
+type UserNotFound struct{}
+
 func saveUser(u User) {
 	users = append(users, u)
 }
@@ -26,12 +28,24 @@ func getUserById(id uuid.UUID) User {
 	return users[idx]
 }
 
-func getUserByName(username string) User {
-	idx := slices.IndexFunc(users, func(u User) bool { return u.Username == username })
-	if idx == -1 {
-		return User{}
+func getUserByName(username string) (User, error) {
+	rows, err := db.Query("SELECT * FROM users where username = $1", username)
+	if err != nil {
+		return User{}, err
 	}
-	return users[idx]
+
+	var p User
+
+	if !rows.Next() {
+		return User{}, UserNotFound
+	}
+
+	result.Scan(p)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 func isLoggedIn(w http.ResponseWriter, r *http.Request) bool {
@@ -57,7 +71,12 @@ func register(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	_, err = tx.Exec(context.Background(), "INSERT INTO User")
+	hashsedPassword, err := bcrypt.GenerateFromPassword([]byte(p.Password), 0)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(context.Background(), "INSERT INTO users (username, password) values $1, $2", p.Username, hashsedPassword)
 	if err != nil {
 		return err
 	}
