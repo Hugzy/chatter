@@ -9,7 +9,7 @@ import (
 func (h *serve) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	fmt.Printf("Request URL: %s\n", r.URL.Path)
-	switch r.URL.Path {
+	switch r.Method {
 	case "GET":
 		Get(w, r)
 	case "POST":

@@ -14,8 +14,6 @@ import (
 
 var users = []User{}
 
-type UserNotFound struct{}
-
 func saveUser(u User) {
 	users = append(users, u)
 }
@@ -28,24 +26,24 @@ func getUserById(id uuid.UUID) User {
 	return users[idx]
 }
 
-func getUserByName(username string) (User, error) {
-	rows, err := db.Query("SELECT * FROM users where username = $1", username)
+func getUserByName(username string) (*User, error) {
+	rows, err := db.Query(context.Background(), "SELECT * FROM users where username = $1 LIMIT 1", username)
 	if err != nil {
-		return User{}, err
+		return nil, err
 	}
 
 	var p User
 
 	if !rows.Next() {
-		return User{}, UserNotFound
+		return nil, &UserNotFound{}
 	}
 
-	result.Scan(p)
+	rows.Scan(p)
 	if err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	return &p, nil
 }
 
 func isLoggedIn(w http.ResponseWriter, r *http.Request) bool {
@@ -107,8 +105,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := getUserByName(p.Username)
-	if (User{}) == user {
+	user, error := getUserByName(p.Username)
+	if error != nil {
 		http.Error(w, "User not found", http.StatusBadRequest)
 		return
 	}
