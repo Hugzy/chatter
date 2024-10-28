@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -27,20 +26,11 @@ func getUserById(id uuid.UUID) User {
 }
 
 func getUserByName(username string) (*User, error) {
-	rows, err := db.Query(context.Background(), "SELECT * FROM users where username = $1 LIMIT 1", username)
+	p := User{}
+
+	err := db.Get(p, "SELECT * FROM users where username = $1 LIMIT 1", username)
 	if err != nil {
-		return nil, err
-	}
-
-	var p User
-
-	if !rows.Next() {
 		return nil, &UserNotFound{}
-	}
-
-	rows.Scan(p)
-	if err != nil {
-		return nil, err
 	}
 
 	return &p, nil
@@ -56,14 +46,10 @@ func isLoggedIn(w http.ResponseWriter, r *http.Request) bool {
 
 func register(w http.ResponseWriter, r *http.Request) error {
 	// Get the user from the signup request
-	tx, err := db.Begin(context.Background())
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(context.Background())
+	tx := db.MustBegin()
 
 	var p User
-	err = json.NewDecoder(r.Body).Decode(&p)
+	err := json.NewDecoder(r.Body).Decode(&p)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return err
@@ -74,8 +60,13 @@ func register(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	_, err = db.Exec(context.Background(), "INSERT INTO users (username, password) values $1, $2", p.Username, hashsedPassword)
+	tx.MustExec("INSERT INTO users (username, password) values $1, $2", p.Username, hashsedPassword)
+	err = tx.Commit()
 	if err != nil {
+		err = tx.Rollback()
+		if err != nil {
+			panic(err)
+		}
 		return err
 	}
 

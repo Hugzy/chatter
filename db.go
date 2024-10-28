@@ -1,50 +1,41 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
-var db *pgxpool.Pool
+type DbMigrationRow struct {
+	ID   string
+	Name string
+}
+
+var db *sqlx.DB
 
 func connect_db(c string) {
-	fmt.Println("Connecting to database with connection string: ", c)
-	conn, err := pgxpool.New(context.Background(), c)
+	_db, err := sqlx.Connect("postgres", c)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
+		log.Fatalln(err)
 	}
 
-	db = conn
+	db = _db
 }
 
 func GetMigrations() {
 	query := "SELECT * FROM PGMIGRATIONS"
-	rows, err := db.Query(context.Background(), query)
+
+	dbMigrations := []DbMigrationRow{}
+	err := db.Select(&dbMigrations, query)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
-		os.Exit(1)
+		fmt.Println(err)
 	}
 
-	rowNum := 1
-	for rows.Next() {
-		var v []interface{}
-		v, err = rows.Values()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Println("Row", rowNum)
-
-		for i := range v {
-			fmt.Println(rows.FieldDescriptions()[i].Name, v[i])
-		}
-		rowNum++
+	for _, dmr := range dbMigrations {
+		println(dmr.Name)
 	}
 }
 
@@ -54,53 +45,30 @@ func checkError(err error) {
 	}
 }
 
-type DbMigrationRow struct {
-	ID   string
-	Name string
-}
-
 type migration func() string
 
 func HasMigrationRun(name string) bool {
 	fmt.Printf("checking if migratoin %s has run: ", name)
 	query := fmt.Sprintf("SELECT * FROM PGMIGRATIONS WHERE NAME = '%s'", name)
-	rows, err := db.Query(context.Background(), query)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
-		os.Exit(1)
-	}
-
-	hasRun := rows.Next()
-
-	rows.Close()
-
-	fmt.Printf("%t \n", hasRun)
-
-	return hasRun
+	migration := DbMigrationRow{}
+	err := db.Get(migration, query)
+	return err == nil
 }
 
 func runMigration(name string, fn migration) {
-	tx, err := db.Begin(context.Background())
-	if err != nil {
-		panic(err)
-	}
-	// Rollback is safe to call even if the tx is already closed, so if
-	// the tx commits successfully, this is a no-op
-	defer tx.Rollback(context.Background())
+	tx := db.MustBegin()
 
-	_, err = tx.Exec(context.Background(), fn())
-	if err != nil {
-		panic(err)
-	}
+	db.MustBegin()
 
-	_, err = tx.Exec(context.Background(), "INSERT INTO PGMIGRATIONS (id, name, created_at) VALUES ($1, $2, $3)", uuid.New().String(), name, "now()")
-	if err != nil {
-		panic(err)
-	}
+	tx.MustExec(fn())
+	tx.MustExec("INSERT INTO PGMIGRATIONS (id, name, created_at) VALUES ($1, $2, $3)", uuid.New().String(), name, "now()")
 
-	err = tx.Commit(context.Background())
+	err := tx.Commit()
 	if err != nil {
-		panic(err)
+		err = tx.Rollback()
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	fmt.Println("Migration successful")
@@ -108,7 +76,7 @@ func runMigration(name string, fn migration) {
 
 func setupDBSchema() {
 	fmt.Println("Creating migration schema")
-	_, err := db.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS PGMIGRATIONS (id TEXT PRIMARY KEY, name TEXT, created_at TIMESTAMP)")
+	_, err := db.Exec("CREATE TABLE IF NOT EXISTS PGMIGRATIONS (id TEXT PRIMARY KEY, name TEXT, created_at TIMESTAMP)")
 	if err != nil {
 		panic(err)
 	}

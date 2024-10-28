@@ -1,13 +1,18 @@
 Goal:
 Create a set of endpoints that allows for registering a user, logging in, and logging out.
 
-registerng a user means putting creating an entry in the database.
-logging in means validating the users login and creating an accesskey, 
-persisting it for some time and deleting it. The accesskey should be returned to the client
-logging out means invalidating the users accesskey in the acceskey table
+* switch out database driver with https://github.com/jmoiron/sqlx, http://go-database-sql.org/accessing.html
+* registerng a user means putting creating an entry in the database.
+* logging in means validating the users login and creating an accesskey, 
+* persisting it for some time and deleting it. The accesskey should be returned to the client
+* logging out means invalidating the users accesskey in the acceskey table
 
 
 - Add validate login to all paths registered
 - Enable login cookie
 - Enable logout clearing of cookie
  
+test cases:
+* create a user, check if the username exists in the database
+* login, check if password match with seeded user
+* logout, check if accesskey exists in login table
