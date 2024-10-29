@@ -3,18 +3,48 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 )
+
+var db *sqlx.DB
 
 type DbMigrationRow struct {
 	ID   string
 	Name string
 }
 
-var db *sqlx.DB
+/*
+* Users functions
+ */
+//return "CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY, username TEXT, password TEXT)"
+func seed() error {
+	var sb strings.Builder
+	sb.WriteString("INSERT INTO USERS (username, password) VALUES")
+	names := []string{"James", "Mary", "Micheal", "Patricia", "Robert", "Jennifer", "John", "Linda", "David", "Elizabeth"}
+	for _, s := range names {
+		pw, err := bcrypt.GenerateFromPassword([]byte(s), 0)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Fprintln(&b, "(:)")
+		sb.WriteString("(s, ")
+	}
+}
+
+func count() ([]User, error) {
+	query := "SELECT COUNT(*) FROM USERS"
+	users = []User{}
+	err := db.Select(users, query)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
 
 func connect_db(c string) {
 	_db, err := sqlx.Connect("postgres", c)
