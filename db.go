@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -22,18 +21,23 @@ type DbMigrationRow struct {
 * Users functions
  */
 //return "CREATE TABLE IF NOT EXISTS users (id UUID PRIMARY KEY, username TEXT, password TEXT)"
-func seed() error {
-	var sb strings.Builder
-	sb.WriteString("INSERT INTO USERS (username, password) VALUES")
+func seed_users() error {
 	names := []string{"James", "Mary", "Micheal", "Patricia", "Robert", "Jennifer", "John", "Linda", "David", "Elizabeth"}
+	tx := db.MustBegin()
 	for _, s := range names {
 		pw, err := bcrypt.GenerateFromPassword([]byte(s), 0)
 		if err != nil {
 			panic(err)
 		}
-		fmt.Fprintln(&b, "(:)")
-		sb.WriteString("(s, ")
+		uuid, _ := uuid.NewV7()
+		tx.MustExec("INSERT INTO USERS (id, username, password) VALUES ($1, $2, $3)", uuid, s, pw)
 	}
+	err := tx.Commit()
+	if err != nil {
+		panic(err)
+	}
+
+	return nil
 }
 
 func count() ([]User, error) {

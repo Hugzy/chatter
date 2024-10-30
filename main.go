@@ -22,7 +22,7 @@ func main() {
 	conf := LoadConfiguration()
 	connect_db(conf.ConnectionString)
 	setupDBSchema()
-
+	seed_users()
 	mux := http.NewServeMux()
 	fmt.Println("Server is ready and listening on port 3000")
 	mux.Handle("/", &serve{})
