@@ -13,8 +13,9 @@ import (
 var db *sqlx.DB
 
 type DbMigrationRow struct {
-	ID   string
-	Name string
+	ID        string
+	Name      string
+	CreatedAt string `db:"created_at"`
 }
 
 /*
@@ -82,10 +83,11 @@ func checkError(err error) {
 type migration func() string
 
 func HasMigrationRun(name string) bool {
-	fmt.Printf("checking if migratoin %s has run: ", name)
-	query := fmt.Sprintf("SELECT * FROM PGMIGRATIONS WHERE NAME = '%s'", name)
+	fmt.Printf("checking if migratoin %s has run\n", name)
+	// query := fmt.Sprintf("SELECT * FROM PGMIGRATIONS WHERE NAME = '%s'", name)
 	migration := DbMigrationRow{}
-	err := db.Get(migration, query)
+	err := db.Get(&migration, "SELECT * FROM PGMIGRATIONS WHERE NAME = $1", name)
+	fmt.Println(err)
 	return err == nil
 }
 
@@ -121,6 +123,15 @@ func setupDBSchema() {
 	if !hasRun {
 		runMigration("create_user_table", createUserTable)
 	}
+	hasRun = HasMigrationRun("create_test_table")
+	if !hasRun {
+		runMigration("create_test_table", createTestTable)
+	}
+}
+
+func createTestTable() string {
+	fmt.Println("Running CreateTestTable migration")
+	return "CREATE TABLE IF NOT EXISTS foo (bar TEXT)"
 }
 
 func createUserTable() string {
