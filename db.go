@@ -51,6 +51,16 @@ func count() ([]User, error) {
 	return users, nil
 }
 
+func GetUser(name string) (*User, error) {
+	query := "SELECT * FROM USERS"
+	user := User{}
+	err := db.Select(&user, query)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func connect_db(c string) {
 	_db, err := sqlx.Connect("postgres", c)
 	if err != nil {

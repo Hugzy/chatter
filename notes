@@ -1,7 +1,7 @@
 Goal:
 Create a set of endpoints that allows for registering a user, logging in, and logging out.
 
-* switch out database driver with https://github.com/jmoiron/sqlx, http://go-database-sql.org/accessing.html
+* switch out database driver with https://github.com/jmoiron/sqlx, http://go-database-sql.org/accessing.html - DONE
 * registerng a user means putting creating an entry in the database.
 * logging in means validating the users login and creating an accesskey, 
 * persisting it for some time and deleting it. The accesskey should be returned to the client
