@@ -18,6 +18,8 @@ type DbMigrationRow struct {
 	CreatedAt string `db:"created_at"`
 }
 
+type migration func() string
+
 /*
 * Users functions
  */
@@ -45,6 +47,15 @@ func count() ([]User, error) {
 	query := "SELECT COUNT(*) FROM USERS"
 	users = []User{}
 	err := db.Select(users, query)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func getAllUsers() ([]User, error) {
+	users := []User{}
+	err := db.Select(&users, "SELECT * FROM USERS")
 	if err != nil {
 		return nil, err
 	}
@@ -83,14 +94,6 @@ func GetMigrations() {
 		println(dmr.Name)
 	}
 }
-
-func checkError(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-type migration func() string
 
 func HasMigrationRun(name string) bool {
 	fmt.Printf("checking if migratoin %s has run\n", name)

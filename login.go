@@ -27,9 +27,9 @@ func getUserById(id uuid.UUID) User {
 
 func getUserByName(username string) (*User, error) {
 	p := User{}
-
-	err := db.Get(p, "SELECT * FROM users where username = $1 LIMIT 1", username)
+	err := db.Get(&p, "SELECT * FROM users where username = $1 LIMIT 1", username)
 	if err != nil {
+		fmt.Println(err)
 		return nil, &UserNotFound{}
 	}
 
@@ -106,6 +106,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 	// User was already logged in
 	if !session.IsNew {
+		w.Write([]byte("Already logged in"))
 		return
 	}
 
@@ -119,8 +120,12 @@ func login(w http.ResponseWriter, r *http.Request) {
 			HttpOnly: true,
 		}
 		// TODO could add and store an accesskey here with an expiration
-		session.Values["id"] = user.ID.String()
-		session.Values["username"] = user.Username
+		session.Values["accesskey"] = user.ID.String()
+		err = session.Save(r, w)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		// session.Values["accesskey"] =
 		w.Write([]byte("Login successful"))
 	}

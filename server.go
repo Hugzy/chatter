@@ -24,11 +24,15 @@ func Get(w http.ResponseWriter, r *http.Request) {
 	case "/test":
 		w.Write([]byte(`{"message": "GET /test called"}`))
 		return
-	case "/get/migrations":
+	case "/migrations":
 		GetMigrations()
 	case "/users":
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
+		users, err := getAllUsers()
+		if err != nil {
+			panic(err)
+		}
 		json.NewEncoder(w).Encode(users)
 		return
 	case "/test/afterlogin":
