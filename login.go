@@ -120,7 +120,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 			HttpOnly: true,
 		}
 		// TODO could add and store an accesskey here with an expiration
-		session.Values["accesskey"] = user.ID.String()
+		session.Values["accesskeyn"] = user.ID.String()
 		err = session.Save(r, w)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
