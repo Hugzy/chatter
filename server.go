@@ -21,6 +21,15 @@ func (h *serve) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func Get(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
+	case "/weather":
+		forecasts, err := getWeather(w, r)
+		encoder := json.NewEncoder(w)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+		encoder.Encode(forecasts)
+		return
 	case "/test":
 		w.Write([]byte(`{"message": "GET /test called"}`))
 		return

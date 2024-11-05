@@ -45,7 +45,7 @@ func seed_users() error {
 
 func count() ([]User, error) {
 	query := "SELECT COUNT(*) FROM USERS"
-	users = []User{}
+	users := []User{}
 	err := db.Select(users, query)
 	if err != nil {
 		return nil, err

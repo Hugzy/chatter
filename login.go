@@ -4,26 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"slices"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 )
-
-var users = []User{}
-
-func saveUser(u User) {
-	users = append(users, u)
-}
-
-func getUserById(id uuid.UUID) User {
-	idx := slices.IndexFunc(users, func(u User) bool { return u.ID == id })
-	if idx == -1 {
-		return User{}
-	}
-	return users[idx]
-}
 
 func getUserByName(username string) (*User, error) {
 	p := User{}
@@ -39,9 +23,14 @@ func getUserByName(username string) (*User, error) {
 func isLoggedIn(w http.ResponseWriter, r *http.Request) bool {
 	fmt.Println("checking login status")
 
-	sess, _ := store.Get(r, "login")
+	sess, err := store.Get(r, "login")
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	return sess == nil
+	fmt.Println(sess)
+
+	return sess.Values["accesskey"] != nil
 }
 
 func register(w http.ResponseWriter, r *http.Request) error {
@@ -77,8 +66,14 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	session, _ := store.Get(r, "login")
 
 	for k := range session.Values {
+		fmt.Print("deleting: ")
+		fmt.Println(k)
 		delete(session.Values, k)
 	}
+
+	session.Save(r, w)
+
+	fmt.Println(session)
 
 	w.Write([]byte("Logout successful"))
 }
@@ -105,7 +100,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	session, _ := store.Get(r, "login")
 
 	// User was already logged in
-	if !session.IsNew {
+	if isLoggedIn(w, r) {
 		w.Write([]byte("Already logged in"))
 		return
 	}
@@ -120,7 +115,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 			HttpOnly: true,
 		}
 		// TODO could add and store an accesskey here with an expiration
-		session.Values["accesskeyn"] = user.ID.String()
+		session.Values["accesskey"] = user.ID.String()
 		err = session.Save(r, w)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
